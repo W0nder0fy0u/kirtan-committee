@@ -1,65 +1,243 @@
-<!-- frontend/index.html -->
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>KIRTAN Committee</title>
+  <meta charset="UTF-8" />
+  <title>KIRTAN Committee | Members Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <style>
-    body { font-family: Arial; padding: 20px; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #ccc; padding: 8px; }
-    th { background: #f4f4f4; }
+    :root {
+      --primary: #2c3e50;
+      --secondary: #34495e;
+      --success: #2ecc71;
+      --danger: #e74c3c;
+      --bg: #f5f7fa;
+      --card: #ffffff;
+      --border: #dcdcdc;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: var(--bg);
+      color: #333;
+    }
+
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 24px;
+      letter-spacing: 1px;
+    }
+
+    header p {
+      margin: 5px 0 0;
+      opacity: 0.9;
+      font-size: 14px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 30px auto;
+      padding: 0 15px;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 700px;
+    }
+
+    thead {
+      background: var(--secondary);
+      color: white;
+    }
+
+    th, td {
+      padding: 12px 14px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+
+    th {
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+
+    tbody tr:hover {
+      background: #f1f3f6;
+    }
+
+    .status-paid {
+      color: var(--success);
+      font-weight: 600;
+    }
+
+    .status-due {
+      color: var(--danger);
+      font-weight: 600;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      color: white;
+    }
+
+    .badge-yes {
+      background: var(--danger);
+    }
+
+    .badge-no {
+      background: var(--success);
+    }
+
+    .loading,
+    .error {
+      text-align: center;
+      padding: 30px;
+      font-size: 16px;
+    }
+
+    .error {
+      color: var(--danger);
+      background: #fdecea;
+      border-radius: 6px;
+      margin-bottom: 20px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 15px;
+      font-size: 12px;
+      color: #777;
+    }
+
+    @media (max-width: 768px) {
+      header h1 {
+        font-size: 20px;
+      }
+    }
   </style>
 </head>
+
 <body>
-  <h1>KIRTAN Committee – Members View</h1>
-  <table id="table">
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Deposit Status</th>
-        <th>Deposit Date</th>
-        <th>Loan Taken</th>
-        <th>Outstanding</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <header>
+    <h1>KIRTAN Committee</h1>
+    <p>Transparent Member Financial Overview</p>
+  </header>
+
+  <div class="container">
+    <div id="message"></div>
+
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Deposit Status</th>
+            <th>Deposit Date</th>
+            <th>Loan Taken</th>
+            <th>Outstanding Amount (₹)</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr>
+            <td colspan="5" class="loading">Loading data…</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer>
+    © 2026 KIRTAN Committee · View Only · No Online Payments
+  </footer>
 
   <script>
-    console.log("Fetching data from http://localhost:3000/data");
-    fetch("http://localhost:3000/data", {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json"
-      }
-    })
-      .then(res => {
-        console.log("Response status:", res.status);
-        return res.json();
+    const API_URL = "http://localhost:3000/data";
+    const tableBody = document.getElementById("tableBody");
+    const messageDiv = document.getElementById("message");
+
+    function showError(msg) {
+      messageDiv.innerHTML = `<div class="error">${msg}</div>`;
+      tableBody.innerHTML = "";
+    }
+
+    function formatDate(date) {
+      if (!date) return "-";
+      return new Date(date).toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
+      });
+    }
+
+    fetch(API_URL)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Server responded with status " + response.status);
+        }
+        return response.json();
       })
       .then(data => {
-        console.log("Data received:", data);
-        const tbody = document.querySelector("tbody");
-        data.members.forEach(m => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${m.name}</td>
-            <td>${m.deposit.status}</td>
-            <td>${m.deposit.date || "-"}</td>
-            <td>${m.loan.taken ? "Yes" : "No"}</td>
-            <td>${m.loan.outstanding}</td>
+        tableBody.innerHTML = "";
+
+        if (!data.members || data.members.length === 0) {
+          tableBody.innerHTML =
+            `<tr><td colspan="5">No members found</td></tr>`;
+          return;
+        }
+
+        data.members.forEach(member => {
+          const depositClass =
+            member.deposit.status === "Paid"
+              ? "status-paid"
+              : "status-due";
+
+          const loanBadge =
+            member.loan.taken
+              ? `<span class="badge badge-yes">Yes</span>`
+              : `<span class="badge badge-no">No</span>`;
+
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${member.name}</td>
+            <td class="${depositClass}">
+              ${member.deposit.status}
+            </td>
+            <td>${formatDate(member.deposit.date)}</td>
+            <td>${loanBadge}</td>
+            <td>${member.loan.outstanding.toLocaleString("en-IN")}</td>
           `;
-          tbody.appendChild(tr);
+          tableBody.appendChild(row);
         });
       })
-      .catch(err => {
-        console.error("Error loading data:", err);
-        const errorDiv = document.createElement("div");
-        errorDiv.style.color = "red";
-        errorDiv.innerHTML = "<h2>Error loading data:</h2><p>" + err.message + "</p>";
-        document.body.insertBefore(errorDiv, document.body.firstChild);
+      .catch(error => {
+        showError("Unable to load committee data. Please try again later.");
+        console.error(error);
       });
   </script>
 </body>
 </html>
+
