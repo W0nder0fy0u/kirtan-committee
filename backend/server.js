@@ -20,26 +20,83 @@ app.use(express.json());
 const DATA_FILE = path.join(__dirname, "data.json");
 const ADHYAKSH_PASSWORD = "kirtan123";
 
+function readData() {
+  return JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
+}
+
+function writeData(data) {
+  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+}
+
+/* ================= PUBLIC ================= */
+
 app.get("/data", (req, res) => {
-  const data = JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
+  const data = readData();
   res.json(data);
 });
 
+/* ================= ADMIN ================= */
+
 app.post("/login", (req, res) => {
-  const { password } = req.body;
-  if (password === ADHYAKSH_PASSWORD) {
+  if (req.body.password === ADHYAKSH_PASSWORD) {
     res.json({ success: true });
   } else {
     res.status(401).json({ success: false });
   }
 });
 
-app.post("/update", (req, res) => {
-  const { password, data } = req.body;
+/*
+  Monthly update:
+  body = { password, memberId, month (YYYY-MM), paid (true/false) }
+*/
+app.post("/monthly-update", (req, res) => {
+  const { password, memberId, month, paid } = req.body;
+
   if (password !== ADHYAKSH_PASSWORD) {
     return res.status(403).json({ error: "Unauthorized" });
   }
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+
+  const data = readData();
+  const member = data.members.find(m => m.id === memberId);
+
+  if (!member) {
+    return res.status(404).json({ error: "Member not found" });
+  }
+
+  if (!member.monthlyPayments) {
+    member.monthlyPayments = {};
+  }
+
+  member.monthlyPayments[month] = paid;
+  writeData(data);
+
+  res.json({ success: true });
+});
+
+/*
+  Full update (admin save all)
+*/
+app.post("/update", (req, res) => {
+  const { password, data } = req.body;
+
+  if (password !== ADHYAKSH_PASSWORD) {
+    return res.status(403).json({ error: "Unauthorized" });
+  }
+
+  data.members.forEach(m => {
+    if (!m.monthlyPayments) m.monthlyPayments = {};
+    if (!m.loan) {
+      m.loan = {
+        taken: false,
+        amount: 0,
+        interest: 0,
+        dueDate: null,
+        outstanding: 0
+      };
+    }
+  });
+
+  writeData(data);
   res.json({ success: true });
 });
 
