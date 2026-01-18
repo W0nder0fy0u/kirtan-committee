@@ -16,9 +16,7 @@
       --border: #dcdcdc;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -34,18 +32,6 @@
       text-align: center;
     }
 
-    header h1 {
-      margin: 0;
-      font-size: 24px;
-      letter-spacing: 1px;
-    }
-
-    header p {
-      margin: 5px 0 0;
-      opacity: 0.9;
-      font-size: 14px;
-    }
-
     .container {
       max-width: 1100px;
       margin: 30px auto;
@@ -55,7 +41,7 @@
     .card {
       background: var(--card);
       border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
       overflow-x: auto;
     }
 
@@ -77,24 +63,13 @@
       font-size: 14px;
     }
 
-    th {
-      font-weight: 600;
-      letter-spacing: 0.3px;
-    }
-
     tbody tr:hover {
       background: #f1f3f6;
+      cursor: pointer;
     }
 
-    .status-paid {
-      color: var(--success);
-      font-weight: 600;
-    }
-
-    .status-due {
-      color: var(--danger);
-      font-weight: 600;
-    }
+    .status-paid { color: var(--success); font-weight: 600; }
+    .status-due { color: var(--danger); font-weight: 600; }
 
     .badge {
       display: inline-block;
@@ -104,27 +79,27 @@
       color: white;
     }
 
-    .badge-yes {
-      background: var(--danger);
-    }
+    .badge-yes { background: var(--danger); }
+    .badge-no { background: var(--success); }
 
-    .badge-no {
-      background: var(--success);
-    }
-
-    .loading,
-    .error {
-      text-align: center;
-      padding: 30px;
-      font-size: 16px;
-    }
-
-    .error {
-      color: var(--danger);
-      background: #fdecea;
+    .details {
+      background: #fff;
+      border: 1px solid var(--border);
+      padding: 15px;
       border-radius: 6px;
-      margin-bottom: 20px;
+      margin-top: 15px;
     }
+
+    .month {
+      display: inline-block;
+      margin: 4px;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .month.paid { background: var(--success); color: white; }
+    .month.due { background: var(--danger); color: white; }
 
     footer {
       text-align: center;
@@ -132,112 +107,102 @@
       font-size: 12px;
       color: #777;
     }
-
-    @media (max-width: 768px) {
-      header h1 {
-        font-size: 20px;
-      }
-    }
   </style>
 </head>
 
 <body>
-  <header>
-    <h1>KIRTAN Committee</h1>
-    <p>Transparent Member Financial Overview</p>
-  </header>
+<header>
+  <h1>KIRTAN Committee</h1>
+  <p>Transparent Member Financial Overview</p>
+</header>
 
-  <div class="container">
-    <div id="message"></div>
+<div class="container">
+  <div id="message"></div>
 
-    <div class="card">
-      <table>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Deposit Status</th>
-            <th>Deposit Date</th>
-            <th>Loan Taken</th>
-            <th>Outstanding Amount (₹)</th>
-          </tr>
-        </thead>
-        <tbody id="tableBody">
-          <tr>
-            <td colspan="5" class="loading">Loading data…</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Current Month Status</th>
+          <th>Loan Taken</th>
+          <th>Outstanding (₹)</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <tr>
+          <td colspan="4">Loading data…</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 
-  <footer>
-    © 2026 KIRTAN Committee · View Only · No Online Payments
-  </footer>
+  <div id="details"></div>
+</div>
 
-  <script>
-    const API_URL = "http://localhost:3000/data";
-    const tableBody = document.getElementById("tableBody");
-    const messageDiv = document.getElementById("message");
+<footer>
+  © 2026 KIRTAN Committee · View Only · No Online Payments
+</footer>
 
-    function showError(msg) {
-      messageDiv.innerHTML = `<div class="error">${msg}</div>`;
-      tableBody.innerHTML = "";
-    }
+<script>
+const API_URL = "http://localhost:3000/data";
+const tableBody = document.getElementById("tableBody");
+const detailsDiv = document.getElementById("details");
 
-    function formatDate(date) {
-      if (!date) return "-";
-      return new Date(date).toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric"
-      });
-    }
+const currentMonth = new Date().toISOString().slice(0,7);
 
-    fetch(API_URL)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error("Server responded with status " + response.status);
-        }
-        return response.json();
-      })
-      .then(data => {
-        tableBody.innerHTML = "";
+fetch(API_URL)
+.then(r => r.json())
+.then(data => {
+  tableBody.innerHTML = "";
 
-        if (!data.members || data.members.length === 0) {
-          tableBody.innerHTML =
-            `<tr><td colspan="5">No members found</td></tr>`;
-          return;
-        }
+  data.members.forEach(member => {
+    const paidThisMonth = member.monthlyPayments?.[currentMonth] === true;
+    const depositClass = paidThisMonth ? "status-paid" : "status-due";
 
-        data.members.forEach(member => {
-          const depositClass =
-            member.deposit.status === "Paid"
-              ? "status-paid"
-              : "status-due";
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${member.name}</td>
+      <td class="${depositClass}">
+        ${paidThisMonth ? "Paid" : "Due"}
+      </td>
+      <td>
+        ${member.loan.taken
+          ? `<span class="badge badge-yes">Yes</span>`
+          : `<span class="badge badge-no">No</span>`}
+      </td>
+      <td>${member.loan.taken ? member.loan.outstanding : 0}</td>
+    `;
 
-          const loanBadge =
-            member.loan.taken
-              ? `<span class="badge badge-yes">Yes</span>`
-              : `<span class="badge badge-no">No</span>`;
+    row.onclick = () => showDetails(member);
+    tableBody.appendChild(row);
+  });
+});
 
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td>${member.name}</td>
-            <td class="${depositClass}">
-              ${member.deposit.status}
-            </td>
-            <td>${formatDate(member.deposit.date)}</td>
-            <td>${loanBadge}</td>
-            <td>${member.loan.outstanding.toLocaleString("en-IN")}</td>
-          `;
-          tableBody.appendChild(row);
-        });
-      })
-      .catch(error => {
-        showError("Unable to load committee data. Please try again later.");
-        console.error(error);
-      });
-  </script>
+function showDetails(member) {
+  const months = member.monthlyPayments || {};
+  let monthsHtml = "";
+
+  Object.keys(months).sort().forEach(m => {
+    monthsHtml += `
+      <span class="month ${months[m] ? "paid" : "due"}">
+        ${m}
+      </span>
+    `;
+  });
+
+  detailsDiv.innerHTML = `
+    <div class="details">
+      <h3>${member.name} – Payment History</h3>
+      <b>Monthly Payments (₹500):</b><br><br>
+      ${monthsHtml || "No records"}
+      <hr>
+      <b>Loan Details</b><br>
+      Taken: ${member.loan.taken ? "Yes" : "No"}<br>
+      Outstanding: ₹${member.loan.taken ? member.loan.outstanding : 0}
+    </div>
+  `;
+}
+</script>
 </body>
 </html>
-
