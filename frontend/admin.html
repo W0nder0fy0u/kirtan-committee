@@ -74,14 +74,18 @@
       margin-top: 4px;
     }
 
-    .actions {
-      margin-top: 20px;
-      text-align: center;
-    }
-
     .top-actions {
       display: flex;
       justify-content: space-between;
+      margin-bottom: 20px;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .month-box {
+      background: #eef2f6;
+      padding: 10px;
+      border-radius: 6px;
       margin-bottom: 20px;
     }
   </style>
@@ -98,6 +102,12 @@
 </div>
 
 <div class="panel" id="panel" style="display:none;">
+
+  <div class="month-box">
+    <label><b>Select Month (Monthly ₹500 Update)</b></label>
+    <input type="month" id="selectedMonth">
+  </div>
+
   <div class="top-actions">
     <button class="secondary" onclick="addMember()">+ Add Member</button>
     <button onclick="saveAll()">Save All Changes</button>
@@ -133,20 +143,35 @@ function loadData() {
     .then(res => res.json())
     .then(data => {
       committeeData = data;
+      committeeData.members.forEach(m => {
+        if (!m.monthlyPayments) m.monthlyPayments = {};
+      });
       renderMembers();
     });
 }
 
+document.getElementById("selectedMonth").addEventListener("change", renderMembers);
+
 function renderMembers() {
   const container = document.getElementById("members");
+  const month = document.getElementById("selectedMonth").value;
   container.innerHTML = "";
 
+  if (!month) {
+    container.innerHTML = "<p><b>Please select a month first.</b></p>";
+    return;
+  }
+
   committeeData.members.forEach((m, i) => {
+    if (m.monthlyPayments[month] === undefined) {
+      m.monthlyPayments[month] = false;
+    }
+
     const div = document.createElement("div");
     div.className = "member";
 
     div.innerHTML = `
-      <h3>Member ${i + 1}</h3>
+      <h3>${m.name || "New Member"}</h3>
 
       <label>Name</label>
       <input value="${m.name}" onchange="committeeData.members[${i}].name=this.value">
@@ -157,15 +182,10 @@ function renderMembers() {
         <option ${m.role==="Adhyaksh"?"selected":""}>Adhyaksh</option>
       </select>
 
-      <label>Deposit Status</label>
-      <select onchange="committeeData.members[${i}].deposit.status=this.value">
-        <option ${m.deposit.status==="Paid"?"selected":""}>Paid</option>
-        <option ${m.deposit.status==="Due"?"selected":""}>Due</option>
-      </select>
-
-      <label>Deposit Date</label>
-      <input type="date" value="${m.deposit.date || ""}"
-        onchange="committeeData.members[${i}].deposit.date=this.value">
+      <label>₹500 Paid for ${month}</label>
+      <input type="checkbox"
+        ${m.monthlyPayments[month] ? "checked" : ""}
+        onchange="committeeData.members[${i}].monthlyPayments['${month}']=this.checked">
 
       <label>Loan Taken</label>
       <select onchange="committeeData.members[${i}].loan.taken=(this.value==='true')">
@@ -202,6 +222,7 @@ function addMember() {
     id: Date.now(),
     name: "",
     role: "Member",
+    monthlyPayments: {},
     deposit: {
       status: "Due",
       date: null
