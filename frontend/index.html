@@ -80,7 +80,19 @@
       font-size: 14px;
     }
 
-    tbody tr:hover { background: #f1f3f6; }
+    tbody tr.main-row {
+      cursor: pointer;
+    }
+
+    tbody tr.main-row:hover {
+      background: #eef2f6;
+    }
+
+    .details-row td {
+      background: #f9fafc;
+      text-align: left;
+      font-size: 13px;
+    }
 
     .status-paid { color: var(--success); font-weight: 600; }
     .status-due { color: var(--danger); font-weight: 600; }
@@ -108,7 +120,7 @@
 <body>
 <header>
   <h1>KIRTAN Committee</h1>
-  <p>Transparent Member Financial Overview</p>
+  <p>Monthly ₹500 Contribution · Transparent Ledger</p>
   <div class="admin-link">
     <a href="admin.html">Adhyaksh Panel</a>
   </div>
@@ -120,9 +132,9 @@
       <thead>
         <tr>
           <th>Name</th>
-          <th>This Month Status</th>
-          <th>Paid Months</th>
-          <th>Loan Taken</th>
+          <th>This Month</th>
+          <th>Total Paid Months</th>
+          <th>Loan</th>
           <th>Outstanding (₹)</th>
         </tr>
       </thead>
@@ -140,8 +152,6 @@
 <script>
 const API_URL = "http://localhost:3000/data";
 const tableBody = document.getElementById("tableBody");
-
-// current month in YYYY-MM
 const currentMonth = new Date().toISOString().slice(0,7);
 
 fetch(API_URL)
@@ -149,21 +159,21 @@ fetch(API_URL)
   .then(data => {
     tableBody.innerHTML = "";
 
-    data.members.forEach(member => {
+    data.members.forEach((member, index) => {
       const payments = member.monthlyPayments || {};
       const isPaidThisMonth = payments[currentMonth] === true;
 
       const paidMonths = Object.keys(payments)
-        .filter(m => payments[m])
-        .join(", ") || "None";
+        .filter(m => payments[m]);
 
-      const row = document.createElement("tr");
-      row.innerHTML = `
+      const mainRow = document.createElement("tr");
+      mainRow.className = "main-row";
+      mainRow.innerHTML = `
         <td>${member.name}</td>
         <td class="${isPaidThisMonth ? "status-paid" : "status-due"}">
           ${isPaidThisMonth ? "Paid" : "Due"}
         </td>
-        <td>${paidMonths}</td>
+        <td>${paidMonths.length}</td>
         <td>
           ${member.loan?.taken
             ? `<span class="badge badge-yes">Yes</span>`
@@ -171,7 +181,33 @@ fetch(API_URL)
         </td>
         <td>${member.loan?.taken ? member.loan.outstanding : 0}</td>
       `;
-      tableBody.appendChild(row);
+
+      const detailsRow = document.createElement("tr");
+      detailsRow.className = "details-row";
+      detailsRow.style.display = "none";
+      detailsRow.innerHTML = `
+        <td colspan="5">
+          <b>Monthly Payment History:</b><br>
+          ${paidMonths.length
+            ? paidMonths.join(", ")
+            : "No payments recorded"}
+          <br><br>
+          <b>Loan Details:</b><br>
+          ${member.loan?.taken
+            ? `Amount: ₹${member.loan.amount} |
+               Interest: ${member.loan.interest}% |
+               Due Date: ${member.loan.dueDate || "-"}`
+            : "No loan taken"}
+        </td>
+      `;
+
+      mainRow.onclick = () => {
+        detailsRow.style.display =
+          detailsRow.style.display === "none" ? "table-row" : "none";
+      };
+
+      tableBody.appendChild(mainRow);
+      tableBody.appendChild(detailsRow);
     });
   })
   .catch(err => {
