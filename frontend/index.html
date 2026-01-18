@@ -1,0 +1,65 @@
+<!-- frontend/index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>KIRTAN Committee</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 8px; }
+    th { background: #f4f4f4; }
+  </style>
+</head>
+<body>
+  <h1>KIRTAN Committee – Members View</h1>
+  <table id="table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Deposit Status</th>
+        <th>Deposit Date</th>
+        <th>Loan Taken</th>
+        <th>Outstanding</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    console.log("Fetching data from http://localhost:3000/data");
+    fetch("http://localhost:3000/data", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json"
+      }
+    })
+      .then(res => {
+        console.log("Response status:", res.status);
+        return res.json();
+      })
+      .then(data => {
+        console.log("Data received:", data);
+        const tbody = document.querySelector("tbody");
+        data.members.forEach(m => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${m.name}</td>
+            <td>${m.deposit.status}</td>
+            <td>${m.deposit.date || "-"}</td>
+            <td>${m.loan.taken ? "Yes" : "No"}</td>
+            <td>${m.loan.outstanding}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      })
+      .catch(err => {
+        console.error("Error loading data:", err);
+        const errorDiv = document.createElement("div");
+        errorDiv.style.color = "red";
+        errorDiv.innerHTML = "<h2>Error loading data:</h2><p>" + err.message + "</p>";
+        document.body.insertBefore(errorDiv, document.body.firstChild);
+      });
+  </script>
+</body>
+</html>

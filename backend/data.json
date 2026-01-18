@@ -1,0 +1,39 @@
+
+{
+  "committee": "KIRTAN Committee",
+  "monthlyContribution": 500,
+  "members": [
+    {
+      "id": 1,
+      "name": "Ram Singh",
+      "role": "Adhyaksh",
+      "deposit": {
+        "status": "Paid",
+        "date": "2026-03-05"
+      },
+      "loan": {
+        "taken": true,
+        "amount": 10000,
+        "interest": 1,
+        "dueDate": "2026-09-05",
+        "outstanding": 4000
+      }
+    },
+    {
+      "id": 2,
+      "name": "Shyam Lal",
+      "role": "Member",
+      "deposit": {
+        "status": "Due",
+        "date": null
+      },
+      "loan": {
+        "taken": false,
+        "amount": 0,
+        "interest": 0,
+        "dueDate": null,
+        "outstanding": 0
+      }
+    }
+  ]
+}
