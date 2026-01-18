@@ -42,13 +42,8 @@
       color: white;
     }
 
-    button.danger {
-      background: #e74c3c;
-    }
-
-    button.secondary {
-      background: #16a085;
-    }
+    button.danger { background: #e74c3c; }
+    button.secondary { background: #16a085; }
 
     .member {
       border: 1px solid #ddd;
@@ -56,10 +51,6 @@
       margin-bottom: 15px;
       border-radius: 6px;
       background: #fafafa;
-    }
-
-    .member h3 {
-      margin-top: 0;
     }
 
     label {
@@ -104,13 +95,13 @@
 <div class="panel" id="panel" style="display:none;">
 
   <div class="month-box">
-    <label><b>Select Month (Monthly ₹500 Update)</b></label>
+    <label><b>Select Month (₹500 Monthly Contribution)</b></label>
     <input type="month" id="selectedMonth">
   </div>
 
   <div class="top-actions">
     <button class="secondary" onclick="addMember()">+ Add Member</button>
-    <button onclick="saveAll()">Save All Changes</button>
+    <button onclick="saveAll()">Save Monthly Update</button>
   </div>
 
   <div id="members"></div>
@@ -120,6 +111,13 @@
 const API = "http://localhost:3000";
 let committeeData = null;
 let PASSWORD = "";
+
+// auto-select current month
+document.addEventListener("DOMContentLoaded", () => {
+  const now = new Date();
+  document.getElementById("selectedMonth").value =
+    now.toISOString().slice(0,7);
+});
 
 function login() {
   PASSWORD = document.getElementById("password").value;
@@ -145,6 +143,9 @@ function loadData() {
       committeeData = data;
       committeeData.members.forEach(m => {
         if (!m.monthlyPayments) m.monthlyPayments = {};
+        if (!m.loan) {
+          m.loan = { taken:false, amount:0, interest:0, dueDate:null, outstanding:0 };
+        }
       });
       renderMembers();
     });
@@ -158,7 +159,7 @@ function renderMembers() {
   container.innerHTML = "";
 
   if (!month) {
-    container.innerHTML = "<p><b>Please select a month first.</b></p>";
+    container.innerHTML = "<p><b>Please select a month.</b></p>";
     return;
   }
 
@@ -173,7 +174,7 @@ function renderMembers() {
     div.innerHTML = `
       <h3>${m.name || "New Member"}</h3>
 
-      <label>Name</label>
+      <label>Member Name</label>
       <input value="${m.name}" onchange="committeeData.members[${i}].name=this.value">
 
       <label>Role</label>
@@ -186,6 +187,8 @@ function renderMembers() {
       <input type="checkbox"
         ${m.monthlyPayments[month] ? "checked" : ""}
         onchange="committeeData.members[${i}].monthlyPayments['${month}']=this.checked">
+
+      <hr>
 
       <label>Loan Taken</label>
       <select onchange="committeeData.members[${i}].loan.taken=(this.value==='true')">
@@ -223,10 +226,6 @@ function addMember() {
     name: "",
     role: "Member",
     monthlyPayments: {},
-    deposit: {
-      status: "Due",
-      date: null
-    },
     loan: {
       taken: false,
       amount: 0,
@@ -255,7 +254,7 @@ function saveAll() {
   })
   .then(res => {
     if (!res.ok) throw new Error();
-    alert("All data saved successfully");
+    alert("Monthly update saved successfully");
   })
   .catch(() => alert("Save failed"));
 }
