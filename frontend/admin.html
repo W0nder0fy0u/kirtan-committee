@@ -1,110 +1,244 @@
-<!-- frontend/admin.html -->
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Adhyaksh Panel</title>
+  <meta charset="UTF-8" />
+  <title>KIRTAN Committee | Adhyaksh Panel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <style>
-    body { font-family: Arial; padding: 20px; }
-    input, button, select { margin: 5px 0; padding: 5px; }
-    .member { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f7fa;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+    }
+
+    .login, .panel {
+      max-width: 1000px;
+      margin: auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    .login input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+
+    button {
+      padding: 8px 14px;
+      cursor: pointer;
+      border: none;
+      border-radius: 4px;
+      background: #2c3e50;
+      color: white;
+    }
+
+    button.danger {
+      background: #e74c3c;
+    }
+
+    button.secondary {
+      background: #16a085;
+    }
+
+    .member {
+      border: 1px solid #ddd;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-radius: 6px;
+      background: #fafafa;
+    }
+
+    .member h3 {
+      margin-top: 0;
+    }
+
+    label {
+      display: block;
+      margin-top: 8px;
+      font-size: 13px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 6px;
+      margin-top: 4px;
+    }
+
+    .actions {
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    .top-actions {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
   </style>
 </head>
+
 <body>
-  <h1>Adhyaksh Admin Panel</h1>
 
-  <div id="login">
-    <input type="password" id="password" placeholder="Enter Password">
-    <button onclick="login()">Login</button>
+<h1>KIRTAN Committee – Adhyaksh Panel</h1>
+
+<div class="login" id="loginBox">
+  <h3>Adhyaksh Login</h3>
+  <input type="password" id="password" placeholder="Enter password" />
+  <button onclick="login()">Login</button>
+</div>
+
+<div class="panel" id="panel" style="display:none;">
+  <div class="top-actions">
+    <button class="secondary" onclick="addMember()">+ Add Member</button>
+    <button onclick="saveAll()">Save All Changes</button>
   </div>
 
-  <div id="panel" style="display:none;">
-    <div id="members"></div>
-    <button onclick="save()">Save Changes</button>
-  </div>
+  <div id="members"></div>
+</div>
 
-  <script>
-    let committeeData = null;
-    let password = "";
+<script>
+const API = "http://localhost:3000";
+let committeeData = null;
+let PASSWORD = "";
 
-    function login() {
-      password = document.getElementById("password").value;
-      fetch("http://localhost:3000/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password })
-      })
-      .then(res => {
-        if (!res.ok) throw new Error();
-        document.getElementById("login").style.display = "none";
-        document.getElementById("panel").style.display = "block";
-        loadData();
-      })
-      .catch(() => alert("Wrong password"));
+function login() {
+  PASSWORD = document.getElementById("password").value;
+
+  fetch(API + "/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password: PASSWORD })
+  })
+  .then(res => {
+    if (!res.ok) throw new Error();
+    document.getElementById("loginBox").style.display = "none";
+    document.getElementById("panel").style.display = "block";
+    loadData();
+  })
+  .catch(() => alert("Wrong password"));
+}
+
+function loadData() {
+  fetch(API + "/data")
+    .then(res => res.json())
+    .then(data => {
+      committeeData = data;
+      renderMembers();
+    });
+}
+
+function renderMembers() {
+  const container = document.getElementById("members");
+  container.innerHTML = "";
+
+  committeeData.members.forEach((m, i) => {
+    const div = document.createElement("div");
+    div.className = "member";
+
+    div.innerHTML = `
+      <h3>Member ${i + 1}</h3>
+
+      <label>Name</label>
+      <input value="${m.name}" onchange="committeeData.members[${i}].name=this.value">
+
+      <label>Role</label>
+      <select onchange="committeeData.members[${i}].role=this.value">
+        <option ${m.role==="Member"?"selected":""}>Member</option>
+        <option ${m.role==="Adhyaksh"?"selected":""}>Adhyaksh</option>
+      </select>
+
+      <label>Deposit Status</label>
+      <select onchange="committeeData.members[${i}].deposit.status=this.value">
+        <option ${m.deposit.status==="Paid"?"selected":""}>Paid</option>
+        <option ${m.deposit.status==="Due"?"selected":""}>Due</option>
+      </select>
+
+      <label>Deposit Date</label>
+      <input type="date" value="${m.deposit.date || ""}"
+        onchange="committeeData.members[${i}].deposit.date=this.value">
+
+      <label>Loan Taken</label>
+      <select onchange="committeeData.members[${i}].loan.taken=(this.value==='true')">
+        <option value="false" ${!m.loan.taken?"selected":""}>No</option>
+        <option value="true" ${m.loan.taken?"selected":""}>Yes</option>
+      </select>
+
+      <label>Loan Amount</label>
+      <input type="number" value="${m.loan.amount}"
+        onchange="committeeData.members[${i}].loan.amount=Number(this.value)">
+
+      <label>Interest (%)</label>
+      <input type="number" value="${m.loan.interest}"
+        onchange="committeeData.members[${i}].loan.interest=Number(this.value)">
+
+      <label>Loan Due Date</label>
+      <input type="date" value="${m.loan.dueDate || ""}"
+        onchange="committeeData.members[${i}].loan.dueDate=this.value">
+
+      <label>Outstanding Amount</label>
+      <input type="number" value="${m.loan.outstanding}"
+        onchange="committeeData.members[${i}].loan.outstanding=Number(this.value)">
+
+      <br><br>
+      <button class="danger" onclick="deleteMember(${i})">Delete Member</button>
+    `;
+
+    container.appendChild(div);
+  });
+}
+
+function addMember() {
+  committeeData.members.push({
+    id: Date.now(),
+    name: "",
+    role: "Member",
+    deposit: {
+      status: "Due",
+      date: null
+    },
+    loan: {
+      taken: false,
+      amount: 0,
+      interest: 0,
+      dueDate: null,
+      outstanding: 0
     }
+  });
+  renderMembers();
+}
 
-    function loadData() {
-      fetch("http://localhost:3000/data")
-        .then(res => res.json())
-        .then(data => {
-          committeeData = data;
-          renderMembers();
-        });
-    }
+function deleteMember(index) {
+  if (!confirm("Delete this member?")) return;
+  committeeData.members.splice(index, 1);
+  renderMembers();
+}
 
-    function renderMembers() {
-      const container = document.getElementById("members");
-      container.innerHTML = "";
-      committeeData.members.forEach((m, i) => {
-        const div = document.createElement("div");
-        div.className = "member";
-        div.innerHTML = `
-          <h3>${m.name}</h3>
-          Deposit:
-          <select onchange="committeeData.members[${i}].deposit.status=this.value">
-            <option ${m.deposit.status==="Paid"?"selected":""}>Paid</option>
-            <option ${m.deposit.status==="Due"?"selected":""}>Due</option>
-          </select>
-          <br>
-          Deposit Date:
-          <input type="date" value="${m.deposit.date || ""}"
-            onchange="committeeData.members[${i}].deposit.date=this.value">
-          <br>
-          Loan Amount:
-          <input type="number" value="${m.loan.amount}"
-            onchange="committeeData.members[${i}].loan.amount=Number(this.value)">
-          <br>
-          Interest (%):
-          <input type="number" value="${m.loan.interest}"
-            onchange="committeeData.members[${i}].loan.interest=Number(this.value)">
-          <br>
-          Due Date:
-          <input type="date" value="${m.loan.dueDate || ""}"
-            onchange="committeeData.members[${i}].loan.dueDate=this.value">
-          <br>
-          Outstanding:
-          <input type="number" value="${m.loan.outstanding}"
-            onchange="committeeData.members[${i}].loan.outstanding=Number(this.value)">
-        `;
-        container.appendChild(div);
-      });
-    }
+function saveAll() {
+  fetch(API + "/update", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      password: PASSWORD,
+      data: committeeData
+    })
+  })
+  .then(res => {
+    if (!res.ok) throw new Error();
+    alert("All data saved successfully");
+  })
+  .catch(() => alert("Save failed"));
+}
+</script>
 
-    function save() {
-      fetch("http://localhost:3000/update", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          password,
-          data: committeeData
-        })
-      })
-      .then(res => {
-        if (!res.ok) throw new Error();
-        alert("Saved successfully");
-      })
-      .catch(() => alert("Save failed"));
-    }
-  </script>
 </body>
 </html>
