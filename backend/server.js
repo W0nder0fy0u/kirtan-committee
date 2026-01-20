@@ -31,8 +31,7 @@ function writeData(data) {
 /* ================= PUBLIC ================= */
 
 app.get("/data", (req, res) => {
-  const data = readData();
-  res.json(data);
+  res.json(readData());
 });
 
 /* ================= ADMIN ================= */
@@ -45,10 +44,6 @@ app.post("/login", (req, res) => {
   }
 });
 
-/*
-  Monthly update:
-  body = { password, memberId, month (YYYY-MM), paid (true/false) }
-*/
 app.post("/monthly-update", (req, res) => {
   const { password, memberId, month, paid } = req.body;
 
@@ -73,9 +68,6 @@ app.post("/monthly-update", (req, res) => {
   res.json({ success: true });
 });
 
-/*
-  Full update (admin save all)
-*/
 app.post("/update", (req, res) => {
   const { password, data } = req.body;
 
@@ -100,8 +92,5 @@ app.post("/update", (req, res) => {
   res.json({ success: true });
 });
 
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log("Backend running on port", PORT);
-});
+/* ✅ EXPORT APP FOR VERCEL */
+export default app;
