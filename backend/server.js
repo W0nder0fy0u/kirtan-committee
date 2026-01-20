@@ -18,7 +18,7 @@ app.use(cors({
 app.use(express.json());
 
 const DATA_FILE = path.join(__dirname, "data.json");
-const ADHYAKSH_PASSWORD = "kirtan789";
+const ADHYAKSH_PASSWORD = "kirtan123";
 
 function readData() {
   return JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
