@@ -4,7 +4,7 @@
     {
       "src": "index.js",
       "use": "@vercel/node",
-      "config": { "includeFiles": ["data.json"] } // Specify the JSON file
+      "config": { "includeFiles": ["vercel.json"] } // Specify the JSON file
     }
   ],
   "routes": [
